@@ -954,42 +954,12 @@
             // ═══════════════════════════════════════════════════════════════════
             donationOptions: [
                 {
-                    amount: 100000,
-                    image: "https://i.imgur.com/HDgzAxk.png",
-                    description: "Pro Team 35 Ngày",
-                    transferContent: "CapCut Pro"
-                },
-                {
-                    amount: 30000,
-                    image: "https://i.imgur.com/FkLjLCV.png",
-                    description: "Slot Youtube Pre 1 Tháng",
-                    transferContent: "YouTube Pre"
-                },
-                {
                     amount: 69000,
                     image: "https://i.imgur.com/bpIGMVQ.jpeg",
                     description: "Lên Báo Ở HotGenZ",
                     transferContent: "Len Bao HotGenZ",
                     isDefault: true  // Mức mặc định được chọn sẵn
                 },
-                { 
-                    amount: 120000, 
-                    image: "https://i.imgur.com/TSgQJWy.png", 
-                    description: "Super Grok 30 Ngày",
-                    transferContent: "Grok Super"
-                },
-                {
-                    amount: 150000,
-                    image: "https://i.imgur.com/K9hOCzN.png",
-                    description: "Chat GPT Plus 1 Tháng",
-                    transferContent: "Chat GPT Plus"
-                },
-                {
-                    amount: 20000,
-                    image: "https://i.imgur.com/akmM94h.png",
-                    description: "Key HMA 20-30 Ngày",
-                    transferContent: "Key HMA"
-                }
             ],
             
             // Link MoMo mặc định (khi không tìm thấy amount phù hợp)
@@ -1131,27 +1101,54 @@
         function renderDonationOptions() {
             const grid = document.getElementById('donationGrid');
             grid.innerHTML = CONFIG.donationOptions.map(option => `
-                <div class="donation-card ${option.isDefault ? 'selected' : ''}" data-amount="${option.amount}">
-                    ${
-                        option.image
-                        ? `<img src="${option.image}" class="donation-image">`
-                        : `<div class="donation-emoji">${option.emoji || ''}</div>`
-                    }
-                    <div class="donation-amount">${formatCurrency(option.amount)}</div>
-                    <div class="donation-desc">${option.description}</div>
+                <div class="donation-card"
+                     data-amount="${option.amount}">
+
+                    <img src="${option.image}"
+                         class="donation-image">
+
+                    <div class="donation-amount">
+                        ${formatCurrency(option.amount)}
+                    </div>
+
+                    <div class="donation-desc">
+                        ${option.description}
+                    </div>
+
                 </div>
             `).join('');
             
             // Re-attach event listeners
             document.querySelectorAll('.donation-card').forEach(card => {
+
                 card.addEventListener('click', () => {
-                    document.querySelectorAll('.donation-card').forEach(c => c.classList.remove('selected'));
+
+                    document.querySelectorAll('.donation-card')
+                        .forEach(c => c.classList.remove('selected'));
+
                     card.classList.add('selected');
-                    selectedAmount = parseInt(card.dataset.amount);
+
+                    selectedAmount =
+                        Number(card.dataset.amount);
+
+                    console.log("Đã chọn:", selectedAmount);
 
                     updateButtonText();
+
                 });
+
             });
+            // Tự chọn sản phẩm đầu tiên
+            const firstCard = document.querySelector('.donation-card');
+
+            if (firstCard) {
+                firstCard.classList.add('selected');
+
+                selectedAmount =
+                    Number(firstCard.dataset.amount);
+
+                updateButtonText();
+            }
         }
 
         // Render footer
@@ -1715,6 +1712,22 @@ submitBillBtn.onclick = () => {
             🚪 Logout
         </button>
 
+        <button
+            id="addProductBtn"
+            class="approve-btn"
+            style="margin-bottom:15px;"
+        >
+            ➕ Thêm sản phẩm
+        </button>
+
+        <button
+            id="manageProductsBtn"
+            class="approve-btn"
+            style="margin-bottom:15px;"
+        >
+            📦 Danh Sách Sản Phẩm
+        </button>
+
         <div id="adminPendingList" class="admin-scroll"></div>
 
     </div>
@@ -1803,15 +1816,15 @@ CONFIG.adminPassword = "hotgenz.com";
 /* ========================================= */
 /* FIREBASE CONFIG - DÁN CONFIG CỦA BẠN Ở ĐÂY */
 /* ========================================= */
-const firebaseConfig = {
-  apiKey: "AIzaSyAwyr-InsMUSjPNNQfESKvufMyA2C8Bl-U",
-  authDomain: "store-aa5ec.firebaseapp.com",
-  databaseURL: "https://store-aa5ec-default-rtdb.firebaseio.com",
-  projectId: "store-aa5ec",
-  storageBucket: "store-aa5ec.firebasestorage.app",
-  messagingSenderId: "643343744657",
-  appId: "1:643343744657:web:74d6c84eed77351abf4930",
-  measurementId: "G-KS94DSSJLP"
+const firebaseConfig = { 
+  apiKey : "AIzaSyCp2YBGr_CrC_zZt959lZttXD7xCXB2JfU" , 
+  authDomain : "nuoi-258b5.firebaseapp.com" , 
+  databaseURL: "https://nuoi-258b5-default-rtdb.firebaseio.com",
+  projectId : "nuoi-258b5" , 
+  storageBucket : "nuoi-258b5.firebasestorage.app" , 
+  messagingSenderId : "107600084979" , 
+  appId : "1:107600084979:web:083c441a2044ee8a7bdc86" , 
+  measurementId : "G-7BS6JMHXFZ" 
 };
 
 let db = null;
@@ -1837,6 +1850,7 @@ function initFirebase(){
 
     listenApprovedDonations();
     listenPendingDonations();
+    listenProducts();
 }
 
 function listenApprovedDonations(){
@@ -1863,7 +1877,23 @@ function listenPendingDonations(){
         renderAdminPanel();
     });
 }
+function listenProducts(){
 
+    db.ref('products').on('value', snapshot => {
+
+        const data = snapshot.val() || {};
+
+        CONFIG.donationOptions =
+            Object.keys(data).map(key => ({
+                id: key,
+                ...data[key]
+            }));
+
+        renderDonationOptions();
+
+    });
+
+}
 function savePendingDonationOnline(donation){
     if(!firebaseReady){
         showToast('Firebase chưa sẵn sàng, chưa gửi được đơn 😢', '⚠️');
@@ -1897,7 +1927,6 @@ function rejectDonationOnline(donation){
         .then(() => showToast('Đã từ chối bill ❌', '🚫'))
         .catch(() => showToast('Lỗi khi từ chối đơn 😢', '❌'));
 }
-
 /* ========================================= */
 /* ADMIN ELEMENTS */
 /* ========================================= */
@@ -1910,6 +1939,8 @@ const adminPasswordInput = document.getElementById('adminPasswordInput');
 const adminLoginBtn = document.getElementById('adminLoginBtn');
 const closeAdminLogin = document.getElementById('closeAdminLogin');
 const logoutAdminBtn = document.getElementById('logoutAdminBtn');
+const addProductBtn =
+    document.getElementById('addProductBtn');
 
 /* ========================================= */
 /* OPEN ADMIN - TAP AVATAR 5 LẦN */
@@ -2068,7 +2099,6 @@ function renderAdminPanel(){
         </div>
     `).join('');
 }
-
 /* ========================================= */
 /* APPROVE / REJECT */
 /* ========================================= */
@@ -2084,12 +2114,167 @@ window.rejectDonation = function(index){
     if(!donation) return;
     rejectDonationOnline(donation);
 };
+function renderProductsAdmin(){
 
+    const box =
+        document.getElementById(
+            'productsAdminList'
+        );
+
+    box.innerHTML =
+        CONFIG.donationOptions.map(item => `
+
+        <div class="pending-card">
+
+            <h3>${item.description}</h3>
+
+            <p>${formatCurrency(item.amount)}</p>
+
+            <button
+                class="approve-btn"
+                onclick="editPrice('${item.id}')"
+            >
+                ✏️ Chỉnh Giá
+            </button>
+
+            <button
+                class="reject-btn"
+                onclick="deleteProduct('${item.id}')"
+            >
+                🗑️ Xóa
+            </button>
+
+        </div>
+
+    `).join('');
+}
+window.editPrice = function(id){
+
+    const current =
+        CONFIG.donationOptions.find(
+            x => x.id === id
+        );
+
+    if(!current) return;
+
+    const newPrice =
+        prompt(
+            'Nhập giá mới:',
+            current.amount
+        );
+
+    if(!newPrice) return;
+
+    db.ref(
+        'products/' + id
+    ).update({
+
+        amount:
+            parseInt(newPrice)
+
+    });
+
+    showToast(
+        'Đã cập nhật giá',
+        '💰'
+    );
+};
+window.deleteProduct = function(id){
+
+    if(!confirm('Xóa sản phẩm này?')) return;
+
+    db.ref('products/' + id).remove();
+
+    showToast(
+        'Đã xóa sản phẩm',
+        '🗑️'
+    );
+};
 /* ========================================= */
 /* START ONLINE SYNC */
 /* ========================================= */
+addProductBtn.onclick = () => {
 
+    const amount =
+        prompt("Giá:");
+
+    if(!amount) return;
+
+    const image =
+        prompt("Link ảnh:");
+
+    const description =
+        prompt("Mô tả:");
+
+    const transferContent =
+        prompt("Nội dung CK:");
+
+    db.ref('products').push({
+        amount: parseInt(amount),
+        image,
+        description,
+        transferContent
+    });
+
+    showToast(
+        'Đã thêm sản phẩm',
+        '✅'
+    );
+};
 initFirebase();
-</script>    
+</script>
+<div class="payment-modal" id="productsModal">
+
+    <div class="payment-box">
+
+        <div class="payment-header">
+
+            <h2>
+                📦 Danh Sách Sản Phẩm
+            </h2>
+
+            <button
+                class="close-btn"
+                id="closeProductsModal">
+                ✖
+            </button>
+
+        </div>
+
+        <div
+            id="productsAdminList"
+            class="admin-scroll">
+        </div>
+
+    </div>
+
+</div>
+<script>
+
+const manageProductsBtn =
+    document.getElementById('manageProductsBtn');
+
+const productsModal =
+    document.getElementById('productsModal');
+
+const closeProductsModal =
+    document.getElementById('closeProductsModal');
+
+manageProductsBtn.onclick = () => {
+
+    renderProductsAdmin();
+
+    productsModal.style.display = 'flex';
+
+};
+
+closeProductsModal.onclick = () => {
+
+    productsModal.style.display = 'none';
+
+};
+
+</script>
+
 </body>
 </html>
